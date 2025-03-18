@@ -1,13 +1,5 @@
 package models
 
-import (
-	"github.com/google/uuid"
-)
-
-func GenerateUUID() string {
-	return uuid.New().String()
-}
-
 type Applicant struct {
 	ID               string `json:"id" gorm:"type:uuid;primaryKey"`
 	Name             string `json:"name"`

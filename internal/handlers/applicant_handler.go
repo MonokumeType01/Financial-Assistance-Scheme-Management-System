@@ -5,6 +5,8 @@ import (
 
 	"github.com/MonokumeType01/Financial-Assistance-Scheme-Management-System/internal/models"
 	"github.com/MonokumeType01/Financial-Assistance-Scheme-Management-System/internal/services"
+	"github.com/MonokumeType01/Financial-Assistance-Scheme-Management-System/internal/utils"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,14 +21,15 @@ func NewApplicantHandler(service *services.ApplicantService) *ApplicantHandler {
 // CREATE Applicant with Household
 func (h *ApplicantHandler) CreateApplicant(c *gin.Context) {
 	var data models.ApplicantWithHouseHold
+
 	if err := c.ShouldBindJSON(&data); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	data.ID = models.GenerateUUID()
+	data.ID = utils.GenerateUUID()
 	for i := range data.Household {
-		data.Household[i].ID = models.GenerateUUID()
+		data.Household[i].ID = utils.GenerateUUID()
 		data.Household[i].ApplicantID = data.ID
 	}
 

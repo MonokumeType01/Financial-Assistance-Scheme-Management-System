@@ -2,6 +2,7 @@ package services
 
 import (
 	"github.com/MonokumeType01/Financial-Assistance-Scheme-Management-System/internal/models"
+	"github.com/MonokumeType01/Financial-Assistance-Scheme-Management-System/internal/utils"
 	"gorm.io/gorm"
 )
 
@@ -21,7 +22,7 @@ func (s *ApplicantService) RegisterApplicantWithHousehold(data *models.Applicant
 		}
 
 		for i := range data.Household {
-			data.Household[i].ID = models.GenerateUUID()
+			data.Household[i].ID = utils.GenerateUUID()
 			data.Household[i].ApplicantID = data.ID
 		}
 
