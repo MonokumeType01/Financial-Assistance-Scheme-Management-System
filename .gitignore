@@ -1,0 +1,25 @@
+# Binaries and build artifacts
+*.exe
+*.out
+*.dll
+*.dmg
+*.so
+*.a
+*.o
+
+# IDE-specific files
+.vscode/
+.idea/
+
+# Cache and temporary files
+*.tmp
+*.cache
+*.log
+*.bak
+
+# Environment variables
+.env
+.env.*
+
+# Go-specific files
+/vendor/
