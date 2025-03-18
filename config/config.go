@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -12,14 +13,23 @@ import (
 var DB *gorm.DB
 
 func ConnectDatabase() {
-	dsn := os.Getenv("DB_DSN")
+	dsn := fmt.Sprintf(
+		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
+		os.Getenv("DB_HOST"),
+		os.Getenv("DB_USER"),
+		os.Getenv("DB_PASS"),
+		os.Getenv("DB_NAME"),
+		os.Getenv("DB_PORT"),
+	)
+
 	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		panic("Failed to connect to the database")
+		log.Fatal("Failed to connect to the database:", err)
 	}
 
+	// AutoMigrate updated models
 	database.AutoMigrate(&models.Applicant{}, &models.HouseholdMember{})
 
 	DB = database
-	log.Println("✅ Database connected successfully!")
+	log.Println("Database connected successfully!")
 }

@@ -5,7 +5,9 @@ import (
 	"os"
 
 	"github.com/MonokumeType01/Financial-Assistance-Scheme-Management-System/config"
+	"github.com/MonokumeType01/Financial-Assistance-Scheme-Management-System/internal/handlers"
 	"github.com/MonokumeType01/Financial-Assistance-Scheme-Management-System/internal/routes"
+	"github.com/MonokumeType01/Financial-Assistance-Scheme-Management-System/internal/services"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
@@ -18,7 +20,13 @@ func main() {
 	config.ConnectDatabase()
 
 	router := gin.Default()
-	routes.SetupRoutes(router)
+
+	// Services & Handlers
+	applicantService := services.NewApplicantService(config.DB)
+	applicantHandler := handlers.NewApplicantHandler(applicantService)
+
+	// Routes
+	routes.SetupRoutes(router, applicantHandler)
 
 	port := os.Getenv("PORT")
 	if port == "" {
