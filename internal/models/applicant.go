@@ -1,31 +1,32 @@
 package models
 
 import (
-	"crypto/rand"
-	"encoding/hex"
+	"github.com/google/uuid"
 )
 
 func GenerateUUID() string {
-	bytes := make([]byte, 16)
-	rand.Read(bytes)
-	return hex.EncodeToString(bytes)
+	return uuid.New().String()
 }
 
 type Applicant struct {
-	ID               string `json:"id" gorm:"type:char(32);primaryKey"`
+	ID               string `json:"id" gorm:"type:uuid;primaryKey"`
 	Name             string `json:"name"`
 	EmploymentStatus string `json:"employment_status"`
 	Sex              string `json:"sex"`
 	DateOfBirth      string `json:"date_of_birth"`
 }
 
-type ApplicantWithHouseHold struct {
-	Applicant
-	Household []HouseholdMember `json:"household" gorm:"foreignKey:ApplicantID"`
+type HouseholdMember struct {
+	ID               string `json:"id" gorm:"type:uuid;primaryKey"`
+	Name             string `json:"name"`
+	EmploymentStatus string `json:"employment_status"`
+	Sex              string `json:"sex"`
+	DateOfBirth      string `json:"date_of_birth"`
+	Relation         string `json:"relation"`
+	ApplicantID      string `json:"-" gorm:"type:uuid;index;not null"`
 }
 
-type HouseholdMember struct {
+type ApplicantWithHouseHold struct {
 	Applicant
-	Relation    string `json:"relation"`
-	ApplicantID string `json:"applicant_id"`
+	Household []HouseholdMember `json:"household" gorm:"foreignKey:ApplicantID;constraint:OnDelete:RESTRICT"`
 }
