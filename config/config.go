@@ -27,6 +27,8 @@ func ConnectDatabase() {
 		log.Fatal("Failed to connect to the database:", err)
 	}
 
+	database.Exec(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`)
+
 	// AutoMigrate updated models
 	database.AutoMigrate(&models.Applicant{}, &models.HouseholdMember{})
 
