@@ -47,7 +47,10 @@ func isEligible(applicant models.Applicant, criteria models.Criteria) bool {
 
 // CREATE Scheme
 func (s *SchemeService) CreateScheme(schemeData *models.Scheme) error {
-	conditionValue := schemeData.Criteria.HasChildren.SchoolLevelCondition
+	tx := s.DB.Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
 
 	scheme := models.Scheme{
 		ID:   utils.GenerateUUID(),
@@ -56,21 +59,34 @@ func (s *SchemeService) CreateScheme(schemeData *models.Scheme) error {
 			EmploymentStatus: schemeData.Criteria.EmploymentStatus,
 			HasChildren: &models.Children{
 				SchoolLevel:          schemeData.Criteria.HasChildren.SchoolLevel,
-				SchoolLevelCondition: conditionValue,
+				SchoolLevelCondition: schemeData.Criteria.HasChildren.SchoolLevelCondition,
 			},
 		},
 	}
 
-	for _, benefit := range schemeData.Benefits {
-		scheme.Benefits = append(scheme.Benefits, models.Benefit{
+	benefits := make([]models.Benefit, len(schemeData.Benefits))
+	for i, benefit := range schemeData.Benefits {
+		benefits[i] = models.Benefit{
 			ID:       utils.GenerateUUID(),
 			Name:     benefit.Name,
 			Amount:   benefit.Amount,
 			SchemeID: scheme.ID,
-		})
+		}
 	}
 
-	return s.DB.Create(&scheme).Error
+	if err := tx.Create(&scheme).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if len(benefits) > 0 {
+		if err := tx.Create(&benefits).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit().Error
 }
 
 // RETRIEVE All Schemes
@@ -128,9 +144,15 @@ func (s *SchemeService) GetSchemeByID(id string) (*dto.Scheme, error) {
 
 // UDPATE Scheme by ID
 func (s *SchemeService) UpdateScheme(id string, updatedData *models.Scheme) error {
+	tx := s.DB.Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+
 	var scheme models.Scheme
 
-	if err := s.DB.First(&scheme, "id = ?", id).Error; err != nil {
+	if err := tx.First(&scheme, "id = ?", id).Error; err != nil {
+		tx.Rollback()
 		return errors.New("scheme not found")
 	}
 
@@ -162,27 +184,51 @@ func (s *SchemeService) UpdateScheme(id string, updatedData *models.Scheme) erro
 		}
 	}
 
-	if err := s.DB.Where("scheme_id = ?", scheme.ID).Delete(&models.Benefit{}).Error; err != nil {
+	if err := tx.Save(&scheme).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Where("scheme_id = ?", scheme.ID).Delete(&models.Benefit{}).Error; err != nil {
+		tx.Rollback()
 		return errors.New("failed to delete old benefits")
 	}
 
-	scheme.Benefits = updatedBenefits
+	if len(updatedBenefits) > 0 {
+		if err := tx.Create(&updatedBenefits).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
 
-	return s.DB.Save(&scheme).Error
+	return tx.Commit().Error
 }
 
 // DELETE Scheme
 func (s *SchemeService) DeleteScheme(id string) error {
+	tx := s.DB.Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+
 	var scheme models.Scheme
-	if err := s.DB.First(&scheme, "id = ?", id).Error; err != nil {
+
+	if err := tx.First(&scheme, "id = ?", id).Error; err != nil {
+		tx.Rollback()
 		return errors.New("scheme not found")
 	}
 
-	if err := s.DB.Where("scheme_id = ?", id).Delete(&models.Benefit{}).Error; err != nil {
+	if err := tx.Where("scheme_id = ?", id).Delete(&models.Benefit{}).Error; err != nil {
+		tx.Rollback()
 		return errors.New("failed to delete scheme benefits")
 	}
 
-	return s.DB.Delete(&scheme).Error
+	if err := tx.Delete(&scheme).Error; err != nil {
+		tx.Rollback()
+		return errors.New("failed to delete scheme")
+	}
+
+	return tx.Commit().Error
 }
 
 // RETRIEVE Eligible Schemes

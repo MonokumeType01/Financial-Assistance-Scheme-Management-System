@@ -20,6 +20,11 @@ func NewApplicantService(db *gorm.DB) *ApplicantService {
 
 // CREATE Applicant with Household Members
 func (s *ApplicantService) RegisterApplicantWithHousehold(data *dto.ApplicantWithHousehold) error {
+	tx := s.DB.Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+
 	applicant := models.Applicant{
 		ID:               utils.GenerateUUID(),
 		Name:             data.Name,
@@ -42,23 +47,24 @@ func (s *ApplicantService) RegisterApplicantWithHousehold(data *dto.ApplicantWit
 		}
 	}
 
-	return s.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(&applicant).Error; err != nil {
+	if err := tx.Create(&applicant).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if len(householdMembers) > 0 {
+		if err := tx.Create(&householdMembers).Error; err != nil {
+			tx.Rollback()
 			return err
 		}
+	}
 
-		if len(householdMembers) > 0 {
-			if err := tx.Create(&householdMembers).Error; err != nil {
-				return err
-			}
-		}
-
-		return nil
-	})
+	return tx.Commit().Error
 }
 
 // RETRIEVE All Applicant with Household Members
 func (s *ApplicantService) GetApplicants(ctx context.Context) ([]dto.ApplicantWithHousehold, error) {
+
 	var applicants []models.Applicant
 	if err := s.DB.Preload("Household").Find(&applicants).Error; err != nil {
 		return nil, err
@@ -132,87 +138,102 @@ func (s *ApplicantService) GetApplicantWithID(id string) (*dto.ApplicantWithHous
 
 // UDPATE applicant by ID
 func (s *ApplicantService) UpdateApplicant(id string, updatedData *dto.ApplicantWithHousehold) error {
+	tx := s.DB.Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+
 	var applicant models.Applicant
 
-	if err := s.DB.First(&applicant, "id = ?", id).Error; err != nil {
+	if err := tx.First(&applicant, "id = ?", id).Error; err != nil {
+		tx.Rollback()
 		return errors.New("applicant not found")
 	}
 
-	return s.DB.Transaction(func(tx *gorm.DB) error {
-		applicant.Name = updatedData.Name
-		applicant.EmploymentStatus = updatedData.EmploymentStatus
-		applicant.Sex = updatedData.Sex
-		applicant.DateOfBirth = updatedData.DateOfBirth
+	applicant.Name = updatedData.Name
+	applicant.EmploymentStatus = updatedData.EmploymentStatus
+	applicant.Sex = updatedData.Sex
+	applicant.DateOfBirth = updatedData.DateOfBirth
 
-		if err := tx.Save(&applicant).Error; err != nil {
-			return err
-		}
+	if err := tx.Save(&applicant).Error; err != nil {
+		tx.Rollback()
+		return errors.New("failed to update applicant")
+	}
 
-		if err := tx.Where("applicant_id = ?", applicant.ID).Delete(&models.HouseholdMember{}).Error; err != nil {
-			return err
-		}
+	if err := tx.Where("applicant_id = ?", applicant.ID).Delete(&models.HouseholdMember{}).Error; err != nil {
+		tx.Rollback()
+		return errors.New("failed to delete old household members")
+	}
 
-		existingHouseholdIDs := make(map[string]bool)
-		for _, existingMember := range applicant.Household {
-			existingHouseholdIDs[existingMember.ID] = true
-		}
+	existingHouseholdIDs := make(map[string]bool)
+	for _, existingMember := range applicant.Household {
+		existingHouseholdIDs[existingMember.ID] = true
+	}
 
-		householdMembers := make([]models.HouseholdMember, len(updatedData.Household))
-		for i, member := range updatedData.Household {
-			if existingHouseholdIDs[member.ID] {
-				householdMembers[i] = models.HouseholdMember{
-					ID:               member.ID,
-					Name:             member.Name,
-					EmploymentStatus: member.EmploymentStatus,
-					Sex:              member.Sex,
-					DateOfBirth:      member.DateOfBirth,
-					Relation:         member.Relation,
-					SchoolLevel:      member.SchoolLevel,
-					ApplicantID:      applicant.ID,
-				}
-			} else {
-				householdMembers[i] = models.HouseholdMember{
-					ID:               utils.GenerateUUID(),
-					Name:             member.Name,
-					EmploymentStatus: member.EmploymentStatus,
-					Sex:              member.Sex,
-					DateOfBirth:      member.DateOfBirth,
-					Relation:         member.Relation,
-					SchoolLevel:      member.SchoolLevel,
-					ApplicantID:      applicant.ID,
-				}
+	householdMembers := make([]models.HouseholdMember, len(updatedData.Household))
+	for i, member := range updatedData.Household {
+		if existingHouseholdIDs[member.ID] {
+			householdMembers[i] = models.HouseholdMember{
+				ID:               member.ID,
+				Name:             member.Name,
+				EmploymentStatus: member.EmploymentStatus,
+				Sex:              member.Sex,
+				DateOfBirth:      member.DateOfBirth,
+				Relation:         member.Relation,
+				SchoolLevel:      member.SchoolLevel,
+				ApplicantID:      applicant.ID,
+			}
+		} else {
+			householdMembers[i] = models.HouseholdMember{
+				ID:               utils.GenerateUUID(),
+				Name:             member.Name,
+				EmploymentStatus: member.EmploymentStatus,
+				Sex:              member.Sex,
+				DateOfBirth:      member.DateOfBirth,
+				Relation:         member.Relation,
+				SchoolLevel:      member.SchoolLevel,
+				ApplicantID:      applicant.ID,
 			}
 		}
+	}
 
-		if len(householdMembers) > 0 {
-			if err := tx.Create(&householdMembers).Error; err != nil {
-				return err
-			}
+	if len(householdMembers) > 0 {
+		if err := tx.Create(&householdMembers).Error; err != nil {
+			tx.Rollback()
+			return errors.New("failed to update household members")
 		}
+	}
 
-		return nil
-	})
+	return tx.Commit().Error
 }
 
 // DELETE Applicant By ID
 func (s *ApplicantService) DeleteApplicant(id string) error {
+	tx := s.DB.Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+
 	var applicant models.Applicant
-	if err := s.DB.First(&applicant, "id = ?", id).Error; err != nil {
+	if err := tx.First(&applicant, "id = ?", id).Error; err != nil {
+		tx.Rollback()
 		return errors.New("applicant not found")
 	}
 
-	if err := s.DB.Where("applicant_id = ?", id).Delete(&models.HouseholdMember{}).Error; err != nil {
+	if err := tx.Where("applicant_id = ?", id).Delete(&models.HouseholdMember{}).Error; err != nil {
+		tx.Rollback()
 		return errors.New("failed to delete household members")
 	}
 
-	// TODO: Add after applicant endpoints are done
-	// if err := s.DB.Where("applicant_id = ?", id).Delete(&models.Application{}).Error; err != nil {
-	// 	return errors.New("failed to delete applicant's application")
-	// }
+	if err := tx.Where("applicant_id = ?", id).Delete(&models.Application{}).Error; err != nil {
+		tx.Rollback()
+		return errors.New("failed to delete applicant's application")
+	}
 
-	if err := s.DB.Delete(&applicant).Error; err != nil {
+	if err := tx.Delete(&applicant).Error; err != nil {
+		tx.Rollback()
 		return errors.New("failed to delete applicant")
 	}
 
-	return nil
+	return tx.Commit().Error
 }

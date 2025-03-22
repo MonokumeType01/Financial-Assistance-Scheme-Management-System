@@ -19,6 +19,11 @@ func NewApplicationService(db *gorm.DB) *ApplicationService {
 
 // CREATE Application
 func (s *ApplicationService) RegisterApplication(applicantID, schemeID string) error {
+	tx := s.DB.Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+
 	application := models.Application{
 		ID:          utils.GenerateUUID(),
 		ApplicantID: applicantID,
@@ -27,7 +32,12 @@ func (s *ApplicationService) RegisterApplication(applicantID, schemeID string) e
 		UpdatedAt:   time.Now(),
 	}
 
-	return s.DB.Create(&application).Error
+	if err := tx.Create(&application).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
 }
 
 // RETRIEVE Applicantion by Applicant ID or Scheme ID
@@ -61,9 +71,15 @@ func (s *ApplicationService) GetAllApplications() ([]models.Application, error) 
 
 // UPDATE Application by ID
 func (s *ApplicationService) UpdateApplication(id string, updatedData *models.Application) error {
+	tx := s.DB.Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+
 	var application models.Application
 
-	if err := s.DB.First(&application, "id = ?", id).Error; err != nil {
+	if err := tx.First(&application, "id = ?", id).Error; err != nil {
+		tx.Rollback()
 		return errors.New("application not found")
 	}
 
@@ -71,23 +87,47 @@ func (s *ApplicationService) UpdateApplication(id string, updatedData *models.Ap
 	application.SchemeID = updatedData.SchemeID
 	application.UpdatedAt = time.Now()
 
-	return s.DB.Save(&application).Error
+	if err := tx.Save(&application).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
 }
 
 // DELETE Application
 func (s *ApplicationService) DeleteApplication(applicationID string) error {
+	tx := s.DB.Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+
 	var application models.Application
 
-	// Check if application exists
-	if err := s.DB.First(&application, "id = ?", applicationID).Error; err != nil {
+	if err := tx.First(&application, "id = ?", applicationID).Error; err != nil {
+		tx.Rollback()
 		return errors.New("application not found")
 	}
 
-	// Perform delete
-	return s.DB.Delete(&application).Error
+	if err := tx.Delete(&application).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
 }
 
 // DELETE Application by Applicant ID
 func (s *ApplicationService) DeleteApplicationByApplicantID(applicantID string) error {
-	return s.DB.Where("applicant_id = ?", applicantID).Delete(&models.Application{}).Error
+	tx := s.DB.Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	if err := tx.Where("applicant_id = ?", applicantID).Delete(&models.Application{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
 }
