@@ -24,6 +24,25 @@ func (s *ApplicationService) RegisterApplication(applicantID, schemeID string) e
 		return tx.Error
 	}
 
+	var applicant models.Applicant
+	if err := tx.First(&applicant, "id = ?", applicantID).Error; err != nil {
+		tx.Rollback()
+		return errors.New("applicant not found")
+	}
+
+	var scheme models.Scheme
+	if err := tx.First(&scheme, "id = ?", schemeID).Error; err != nil {
+		tx.Rollback()
+		return errors.New("scheme not found")
+	}
+
+	var existingApplication models.Application
+	if err := tx.Where("applicant_id = ? AND scheme_id = ?", applicantID, schemeID).
+		First(&existingApplication).Error; err == nil {
+		tx.Rollback()
+		return errors.New("application already exists")
+	}
+
 	application := models.Application{
 		ID:          utils.GenerateUUID(),
 		ApplicantID: applicantID,
