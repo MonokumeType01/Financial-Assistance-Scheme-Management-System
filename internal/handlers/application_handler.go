@@ -24,12 +24,12 @@ func (h *ApplicationHandler) RegisterApplication(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input format"})
+		c.Error(err).SetType(gin.ErrorTypePublic).SetMeta("Invalid input format")
 		return
 	}
 
 	if err := h.Service.RegisterApplication(input.ApplicantID, input.SchemeID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to register application"})
+		c.Error(err).SetType(gin.ErrorTypePublic).SetMeta("Failed to register application")
 		return
 	}
 
@@ -43,7 +43,7 @@ func (h *ApplicationHandler) GetApplications(c *gin.Context) {
 
 	applications, err := h.Service.GetApplications(applicantID, schemeID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve applications"})
+		c.Error(err).SetType(gin.ErrorTypePublic).SetMeta("Failed to retrieve applications")
 		return
 	}
 
@@ -54,7 +54,7 @@ func (h *ApplicationHandler) GetApplications(c *gin.Context) {
 func (h *ApplicationHandler) GetAllApplications(c *gin.Context) {
 	applications, err := h.Service.GetAllApplications()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve applications"})
+		c.Error(err).SetType(gin.ErrorTypePublic).SetMeta("Failed to retrieve applications")
 		return
 	}
 
@@ -67,13 +67,14 @@ func (h *ApplicationHandler) UpdateApplication(c *gin.Context) {
 
 	var data models.Application
 	if err := c.ShouldBindJSON(&data); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input format"})
+		c.Error(err).SetType(gin.ErrorTypePublic).SetMeta("Invalid input format")
 		return
 	}
 
 	if err := h.Service.UpdateApplication(id, &data); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update application"})
+		c.Error(err).SetType(gin.ErrorTypePublic).SetMeta("Failed to update application")
 		return
+
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Application updated successfully"})
@@ -84,10 +85,7 @@ func (h *ApplicationHandler) DeleteApplication(c *gin.Context) {
 	applicationID := c.Param("id")
 
 	if err := h.Service.DeleteApplication(applicationID); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error":   "Failed to delete application",
-			"details": err.Error(),
-		})
+		c.Error(err).SetType(gin.ErrorTypePublic).SetMeta("Failed to delete application")
 		return
 	}
 
@@ -99,7 +97,7 @@ func (h *ApplicationHandler) DeleteApplicationByApplicantID(c *gin.Context) {
 	applicantID := c.Param("applicant_id")
 
 	if err := h.Service.DeleteApplicationByApplicantID(applicantID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete applications"})
+		c.Error(err).SetType(gin.ErrorTypePublic).SetMeta("Failed to delete applications")
 		return
 	}
 

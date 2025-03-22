@@ -21,14 +21,12 @@ func NewSchemeHandler(service *services.SchemeService) *SchemeHandler {
 func (h *SchemeHandler) CreateScheme(c *gin.Context) {
 	var data models.Scheme
 	if err := c.ShouldBindJSON(&data); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input format",
-			"details": err.Error()})
+		c.Error(err).SetType(gin.ErrorTypePublic).SetMeta("Invalid input format")
 		return
 	}
 
 	if err := h.Service.CreateScheme(&data); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create scheme",
-			"details": err.Error()})
+		c.Error(err).SetType(gin.ErrorTypePublic).SetMeta("Failed to create scheme")
 		return
 	}
 
@@ -39,9 +37,7 @@ func (h *SchemeHandler) CreateScheme(c *gin.Context) {
 func (h *SchemeHandler) GetAllSchemes(c *gin.Context) {
 	schemes, err := h.Service.GetAllSchemes()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve schemes",
-			"details": err.Error()})
-		return
+		c.Error(err).SetType(gin.ErrorTypePublic).SetMeta("Failed to retrieve schemes")
 	}
 
 	c.JSON(http.StatusOK, gin.H{"schemes": schemes})
@@ -52,8 +48,7 @@ func (h *SchemeHandler) GetSchemeByID(c *gin.Context) {
 	id := c.Param("id")
 	scheme, err := h.Service.GetSchemeByID(id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Scheme not found",
-			"details": err.Error()})
+		c.Error(err).SetType(gin.ErrorTypePublic).SetMeta("Scheme not found")
 		return
 	}
 
@@ -66,14 +61,12 @@ func (h *SchemeHandler) UpdateScheme(c *gin.Context) {
 
 	var updatedData models.Scheme
 	if err := c.ShouldBindJSON(&updatedData); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input data",
-			"details": err.Error()})
+		c.Error(err).SetType(gin.ErrorTypePublic).SetMeta("Invalid input data")
 		return
 	}
 
 	if err := h.Service.UpdateScheme(id, &updatedData); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update scheme",
-			"details": err.Error()})
+		c.Error(err).SetType(gin.ErrorTypePublic).SetMeta("Failed to update scheme")
 		return
 	}
 
@@ -85,8 +78,7 @@ func (h *SchemeHandler) DeleteScheme(c *gin.Context) {
 	id := c.Param("id")
 
 	if err := h.Service.DeleteScheme(id); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Failed to delete scheme",
-			"details": err.Error()})
+		c.Error(err).SetType(gin.ErrorTypePublic).SetMeta("Failed to delete scheme")
 		return
 	}
 
@@ -99,8 +91,7 @@ func (h *SchemeHandler) GetEligibleSchemes(c *gin.Context) {
 
 	eligibleSchemes, err := h.Service.GetEligibleSchemes(applicantID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Failed to get eligible scheme",
-			"details": err.Error()})
+		c.Error(err).SetType(gin.ErrorTypePublic).SetMeta("Failed to get eligible scheme")
 		return
 	}
 

@@ -22,14 +22,12 @@ func (h *ApplicantHandler) CreateApplicant(c *gin.Context) {
 	var data dto.ApplicantWithHousehold
 
 	if err := c.ShouldBindJSON(&data); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to create applicant",
-			"details": err.Error()})
+		c.Error(err).SetType(gin.ErrorTypePublic).SetMeta("Failed to create applicant")
 		return
 	}
 
 	if err := h.Service.RegisterApplicantWithHousehold(&data); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to register applicant",
-			"details": err.Error()})
+		c.Error(err).SetType(gin.ErrorTypePublic).SetMeta("Failed to register applicant")
 		return
 	}
 
@@ -41,8 +39,7 @@ func (h *ApplicantHandler) GetApplicant(c *gin.Context) {
 	id := c.Param("id")
 	applicant, err := h.Service.GetApplicantWithID(id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Applicant not found",
-			"details": err.Error()})
+		c.Error(err).SetType(gin.ErrorTypePublic).SetMeta("Applicant not found")
 		return
 	}
 
@@ -53,8 +50,7 @@ func (h *ApplicantHandler) GetApplicant(c *gin.Context) {
 func (h *ApplicantHandler) GetAllApplicants(c *gin.Context) {
 	applicants, err := h.Service.GetApplicants(c)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve applicants",
-			"details": err.Error()})
+		c.Error(err).SetType(gin.ErrorTypePublic).SetMeta("Failed to retrieve applicants")
 		return
 	}
 
@@ -67,18 +63,12 @@ func (h *ApplicantHandler) UpdateApplicant(c *gin.Context) {
 
 	var data dto.ApplicantWithHousehold
 	if err := c.ShouldBindJSON(&data); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid input format",
-			"details": err.Error(),
-		})
+		c.Error(err).SetType(gin.ErrorTypePublic).SetMeta("Invalid input format")
 		return
 	}
 
 	if err := h.Service.UpdateApplicant(id, &data); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to update applicant",
-			"details": err.Error(),
-		})
+		c.Error(err).SetType(gin.ErrorTypePublic).SetMeta("Failed to update applicant")
 		return
 	}
 
@@ -90,10 +80,7 @@ func (h *ApplicantHandler) DeleteApplicant(c *gin.Context) {
 	id := c.Param("id")
 
 	if err := h.Service.DeleteApplicant(id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to delete applicant",
-			"details": err.Error(),
-		})
+		c.Error(err).SetType(gin.ErrorTypePublic).SetMeta("Failed to delete applicant")
 		return
 	}
 
