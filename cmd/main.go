@@ -27,12 +27,13 @@ func main() {
 	router := gin.Default()
 
 	// Services & Handlers
-	applicantService, schemeService := initializeServices()
+	applicantService, schemeService, applicationService := initializeServices()
 	applicantHandler := handlers.NewApplicantHandler(applicantService)
 	schemeHandler := handlers.NewSchemeHandler(schemeService)
+	applicationHandler := handlers.NewApplicationHandler(applicationService)
 
 	// Routes
-	routes.SetupRoutes(router, applicantHandler, schemeHandler)
+	routes.SetupRoutes(router, applicantHandler, schemeHandler, applicationHandler)
 
 	srv := &http.Server{
 		Addr:    ":" + getPort(),
@@ -50,10 +51,11 @@ func main() {
 	shutdown(srv)
 }
 
-func initializeServices() (*services.ApplicantService, *services.SchemeService) {
+func initializeServices() (*services.ApplicantService, *services.SchemeService, *services.ApplicationService) {
 	applicantService := services.NewApplicantService(config.DB)
 	schemeService := services.NewSchemeService(config.DB)
-	return applicantService, schemeService
+	applicationService := services.NewApplicationService(config.DB)
+	return applicantService, schemeService, applicationService
 }
 
 func getPort() string {
