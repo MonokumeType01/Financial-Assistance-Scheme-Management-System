@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 type Applicant struct {
 	ID               string            `json:"id" gorm:"type:uuid;primaryKey"`
 	Name             string            `json:"name"`
@@ -7,6 +9,8 @@ type Applicant struct {
 	Sex              string            `json:"sex"`
 	DateOfBirth      string            `json:"date_of_birth"`
 	Household        []HouseholdMember `gorm:"foreignKey:ApplicantID;constraint:OnDelete:CASCADE"`
+	CreatedAt        time.Time         `json:"created_at"`
+	UpdatedAt        time.Time         `json:"updated_at"`
 }
 
 type HouseholdMember struct {

@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"time"
 )
 
 type Children struct {
@@ -24,10 +25,12 @@ type Benefit struct {
 }
 
 type Scheme struct {
-	ID       string    `json:"id" gorm:"type:uuid;primaryKey"`
-	Name     string    `json:"name"`
-	Criteria Criteria  `json:"criteria" gorm:"type:jsonb"`
-	Benefits []Benefit `json:"benefits" gorm:"foreignKey:SchemeID"`
+	ID        string    `json:"id" gorm:"type:uuid;primaryKey"`
+	Name      string    `json:"name"`
+	Criteria  Criteria  `json:"criteria" gorm:"type:jsonb"`
+	Benefits  []Benefit `json:"benefits" gorm:"foreignKey:SchemeID"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 func (c *Criteria) Scan(value interface{}) error {
