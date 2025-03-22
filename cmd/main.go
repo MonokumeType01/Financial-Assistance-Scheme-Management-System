@@ -11,6 +11,7 @@ import (
 
 	"github.com/MonokumeType01/Financial-Assistance-Scheme-Management-System/config"
 	"github.com/MonokumeType01/Financial-Assistance-Scheme-Management-System/internal/handlers"
+	"github.com/MonokumeType01/Financial-Assistance-Scheme-Management-System/internal/middleware"
 	"github.com/MonokumeType01/Financial-Assistance-Scheme-Management-System/internal/routes"
 	"github.com/MonokumeType01/Financial-Assistance-Scheme-Management-System/internal/services"
 	"github.com/gin-gonic/gin"
@@ -25,6 +26,8 @@ func main() {
 	config.ConnectDatabase()
 
 	router := gin.Default()
+
+	router.Use(middleware.ErrorMiddleware())
 
 	// Services & Handlers
 	applicantService, schemeService, applicationService := initializeServices()
