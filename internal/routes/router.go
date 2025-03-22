@@ -5,7 +5,27 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRoutes(router *gin.Engine, applicantHandler *handlers.ApplicantHandler) {
-	router.POST("/api/applicants", applicantHandler.CreateApplicant)
-	router.GET("/api/applicants/:id", applicantHandler.GetApplicant)
+func SetupRoutes(router *gin.Engine, applicantHandler *handlers.ApplicantHandler, schemeHandler *handlers.SchemeHandler) {
+	api := router.Group("/api")
+
+	// Applicant
+	applicantRoutes := api.Group("/applicants")
+	{
+		applicantRoutes.POST("/", applicantHandler.CreateApplicant)
+		applicantRoutes.GET("/", applicantHandler.GetAllApplicants)
+		applicantRoutes.GET("/:id", applicantHandler.GetApplicant)
+		applicantRoutes.PUT("/:id", applicantHandler.UpdateApplicant)
+		applicantRoutes.DELETE("/:id", applicantHandler.DeleteApplicant)
+	}
+
+	// Scheme
+	schemeRoutes := api.Group("/schemes")
+	{
+		schemeRoutes.POST("/", schemeHandler.CreateScheme)
+		schemeRoutes.GET("/", schemeHandler.GetAllSchemes)
+		schemeRoutes.GET("/:id", schemeHandler.GetSchemeByID)
+		schemeRoutes.PUT("/:id", schemeHandler.UpdateScheme)
+		schemeRoutes.DELETE("/:id", schemeHandler.DeleteScheme)
+		schemeRoutes.GET("/eligible/:applicantID", schemeHandler.GetEligibleSchemes)
+	}
 }
