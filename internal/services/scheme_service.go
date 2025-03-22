@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"time"
 
 	"github.com/MonokumeType01/Financial-Assistance-Scheme-Management-System/internal/data"
 	"github.com/MonokumeType01/Financial-Assistance-Scheme-Management-System/internal/dto"
@@ -62,6 +63,8 @@ func (s *SchemeService) CreateScheme(schemeData *models.Scheme) error {
 				SchoolLevelCondition: schemeData.Criteria.HasChildren.SchoolLevelCondition,
 			},
 		},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	benefits := make([]models.Benefit, len(schemeData.Benefits))
@@ -164,6 +167,7 @@ func (s *SchemeService) UpdateScheme(id string, updatedData *models.Scheme) erro
 			SchoolLevelCondition: updatedData.Criteria.HasChildren.SchoolLevelCondition,
 		},
 	}
+	scheme.UpdatedAt = time.Now()
 
 	var updatedBenefits []models.Benefit
 	for _, benefit := range updatedData.Benefits {

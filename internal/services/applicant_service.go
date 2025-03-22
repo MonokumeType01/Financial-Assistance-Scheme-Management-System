@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/MonokumeType01/Financial-Assistance-Scheme-Management-System/internal/dto"
 	"github.com/MonokumeType01/Financial-Assistance-Scheme-Management-System/internal/models"
@@ -31,6 +32,8 @@ func (s *ApplicantService) RegisterApplicantWithHousehold(data *dto.ApplicantWit
 		EmploymentStatus: data.EmploymentStatus,
 		Sex:              data.Sex,
 		DateOfBirth:      data.DateOfBirth,
+		CreatedAt:        time.Now(),
+		UpdatedAt:        time.Now(),
 	}
 
 	householdMembers := make([]models.HouseholdMember, len(data.Household))
@@ -154,6 +157,7 @@ func (s *ApplicantService) UpdateApplicant(id string, updatedData *dto.Applicant
 	applicant.EmploymentStatus = updatedData.EmploymentStatus
 	applicant.Sex = updatedData.Sex
 	applicant.DateOfBirth = updatedData.DateOfBirth
+	applicant.UpdatedAt = time.Now()
 
 	if err := tx.Save(&applicant).Error; err != nil {
 		tx.Rollback()
