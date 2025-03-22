@@ -6,4 +6,5 @@ var Models = []interface{}{
 	&HouseholdMember{},
 	&Scheme{},
 	&Benefit{},
+	&Application{},
 }
