@@ -12,6 +12,19 @@ import (
 
 var DB *gorm.DB
 
+func migrateDatabase(db *gorm.DB) {
+	log.Println("Running Database Migration...")
+
+	// AutoMigrate all models
+	for _, model := range models.Models {
+		if err := db.AutoMigrate(model); err != nil {
+			log.Fatalf("Migration failed for %T: %v", model, err)
+		}
+	}
+
+	log.Println("Database Migration Completed Successfully!")
+}
+
 func ConnectDatabase() {
 	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
@@ -29,8 +42,7 @@ func ConnectDatabase() {
 
 	database.Exec(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`)
 
-	// AutoMigrate updated models
-	database.AutoMigrate(&models.Applicant{}, &models.HouseholdMember{})
+	migrateDatabase(database)
 
 	DB = database
 	log.Println("Database connected successfully!")
