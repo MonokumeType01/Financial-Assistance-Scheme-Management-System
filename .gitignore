@@ -19,7 +19,6 @@
 
 # Environment variables
 .env
-.env.*
 
 # Go-specific files
 /vendor/
