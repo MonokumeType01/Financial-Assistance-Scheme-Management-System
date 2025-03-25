@@ -19,21 +19,22 @@ func NewApplicationService(db *gorm.DB) *ApplicationService {
 
 // CREATE Application
 func (s *ApplicationService) RegisterApplication(applicantID, schemeID string) error {
-	tx := s.DB.Begin()
-	if tx.Error != nil {
-		return tx.Error
-	}
 
-	var applicant models.Applicant
-	if err := tx.First(&applicant, "id = ?", applicantID).Error; err != nil {
-		tx.Rollback()
+	var applicantCount, schemeCount int64
+	s.DB.Model(&models.Applicant{}).Where("id = ?", applicantID).Count(&applicantCount)
+	s.DB.Model(&models.Scheme{}).Where("id = ?", schemeID).Count(&schemeCount)
+
+	if applicantCount == 0 {
 		return errors.New("applicant not found")
 	}
 
-	var scheme models.Scheme
-	if err := tx.First(&scheme, "id = ?", schemeID).Error; err != nil {
-		tx.Rollback()
+	if schemeCount == 0 {
 		return errors.New("scheme not found")
+	}
+
+	tx := s.DB.Begin()
+	if tx.Error != nil {
+		return tx.Error
 	}
 
 	var existingApplication models.Application
@@ -100,6 +101,32 @@ func (s *ApplicationService) UpdateApplication(id string, updatedData *models.Ap
 	if err := tx.First(&application, "id = ?", id).Error; err != nil {
 		tx.Rollback()
 		return errors.New("application not found")
+	}
+
+	var applicantExists bool
+	if err := tx.Model(&models.Applicant{}).
+		Select("count(*) > 0").
+		Where("id = ?", updatedData.ApplicantID).
+		Find(&applicantExists).Error; err != nil || !applicantExists {
+		tx.Rollback()
+		return errors.New("applicant not found")
+	}
+
+	var schemeExists bool
+	if err := tx.Model(&models.Scheme{}).
+		Select("count(*) > 0").
+		Where("id = ?", updatedData.SchemeID).
+		Find(&schemeExists).Error; err != nil || !schemeExists {
+		tx.Rollback()
+		return errors.New("scheme not found")
+	}
+
+	var duplicateCheck models.Application
+	if err := tx.Where("applicant_id = ? AND scheme_id = ? AND id != ?",
+		updatedData.ApplicantID, updatedData.SchemeID, id).
+		First(&duplicateCheck).Error; err == nil {
+		tx.Rollback()
+		return errors.New("an application with these details already exists")
 	}
 
 	application.ApplicantID = updatedData.ApplicantID

@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/MonokumeType01/Financial-Assistance-Scheme-Management-System/internal/dto"
@@ -20,10 +21,14 @@ func NewApplicantService(db *gorm.DB) *ApplicantService {
 }
 
 // CREATE Applicant with Household Members
-func (s *ApplicantService) RegisterApplicantWithHousehold(data *dto.ApplicantWithHousehold) error {
+func (s *ApplicantService) RegisterApplicantWithHousehold(data *models.ApplicantWithHousehold) error {
 	tx := s.DB.Begin()
 	if tx.Error != nil {
 		return tx.Error
+	}
+
+	if err := utils.ValidateApplicant(data.Name, data.EmploymentStatus, data.Sex, data.DateOfBirth); err != nil {
+		return err
 	}
 
 	applicant := models.Applicant{
@@ -37,7 +42,21 @@ func (s *ApplicantService) RegisterApplicantWithHousehold(data *dto.ApplicantWit
 	}
 
 	householdMembers := make([]models.HouseholdMember, len(data.Household))
+
 	for i, member := range data.Household {
+		if err := utils.ValidateApplicant(member.Name, member.EmploymentStatus, member.Sex, member.DateOfBirth); err != nil {
+			tx.Rollback()
+			return fmt.Errorf("household member validation failed for '%s': %v", member.Name, err)
+		}
+
+		if err := utils.ValidateRelation(member.Relation); err != nil {
+			return err
+		}
+
+		if err := utils.ValidateSchoolLevel(member.SchoolLevel); err != nil {
+			return err
+		}
+
 		householdMembers[i] = models.HouseholdMember{
 			ID:               utils.GenerateUUID(),
 			Name:             member.Name,
@@ -140,7 +159,7 @@ func (s *ApplicantService) GetApplicantWithID(id string) (*dto.ApplicantWithHous
 }
 
 // UDPATE applicant by ID
-func (s *ApplicantService) UpdateApplicant(id string, updatedData *dto.ApplicantWithHousehold) error {
+func (s *ApplicantService) UpdateApplicant(id string, updatedData *models.ApplicantWithHousehold) error {
 	tx := s.DB.Begin()
 	if tx.Error != nil {
 		return tx.Error
@@ -151,6 +170,10 @@ func (s *ApplicantService) UpdateApplicant(id string, updatedData *dto.Applicant
 	if err := tx.First(&applicant, "id = ?", id).Error; err != nil {
 		tx.Rollback()
 		return errors.New("applicant not found")
+	}
+
+	if err := utils.ValidateApplicant(updatedData.Name, updatedData.EmploymentStatus, updatedData.Sex, updatedData.DateOfBirth); err != nil {
+		return err
 	}
 
 	applicant.Name = updatedData.Name
@@ -176,6 +199,15 @@ func (s *ApplicantService) UpdateApplicant(id string, updatedData *dto.Applicant
 
 	householdMembers := make([]models.HouseholdMember, len(updatedData.Household))
 	for i, member := range updatedData.Household {
+
+		if err := utils.ValidateApplicant(member.Name, member.EmploymentStatus, member.Sex, member.DateOfBirth); err != nil {
+			return err
+		}
+
+		if err := utils.ValidateRelation(member.Relation); err != nil {
+			return err
+		}
+
 		if existingHouseholdIDs[member.ID] {
 			householdMembers[i] = models.HouseholdMember{
 				ID:               member.ID,

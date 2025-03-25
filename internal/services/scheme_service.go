@@ -53,6 +53,14 @@ func (s *SchemeService) CreateScheme(schemeData *models.Scheme) error {
 		return tx.Error
 	}
 
+	if err := utils.ValidateScheme(
+		schemeData.Name,
+		schemeData.Criteria.EmploymentStatus,
+		schemeData.Criteria.HasChildren,
+	); err != nil {
+		return err
+	}
+
 	scheme := models.Scheme{
 		ID:   utils.GenerateUUID(),
 		Name: schemeData.Name,
@@ -69,6 +77,11 @@ func (s *SchemeService) CreateScheme(schemeData *models.Scheme) error {
 
 	benefits := make([]models.Benefit, len(schemeData.Benefits))
 	for i, benefit := range schemeData.Benefits {
+		if err := utils.ValidateBenefit(benefit.Name, benefit.Amount); err != nil {
+			tx.Rollback()
+			return err
+		}
+
 		benefits[i] = models.Benefit{
 			ID:       utils.GenerateUUID(),
 			Name:     benefit.Name,
@@ -152,6 +165,14 @@ func (s *SchemeService) UpdateScheme(id string, updatedData *models.Scheme) erro
 		return tx.Error
 	}
 
+	if err := utils.ValidateScheme(
+		updatedData.Name,
+		updatedData.Criteria.EmploymentStatus,
+		updatedData.Criteria.HasChildren,
+	); err != nil {
+		return err
+	}
+
 	var scheme models.Scheme
 
 	if err := tx.First(&scheme, "id = ?", id).Error; err != nil {
@@ -171,6 +192,11 @@ func (s *SchemeService) UpdateScheme(id string, updatedData *models.Scheme) erro
 
 	var updatedBenefits []models.Benefit
 	for _, benefit := range updatedData.Benefits {
+
+		if err := utils.ValidateBenefit(benefit.Name, benefit.Amount); err != nil {
+			tx.Rollback()
+			return err
+		}
 		if benefit.ID == "" {
 			updatedBenefits = append(updatedBenefits, models.Benefit{
 				ID:       utils.GenerateUUID(),
