@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/MonokumeType01/Financial-Assistance-Scheme-Management-System/internal/dto"
+	"github.com/MonokumeType01/Financial-Assistance-Scheme-Management-System/internal/models"
 	"github.com/MonokumeType01/Financial-Assistance-Scheme-Management-System/internal/services"
 
 	"github.com/gin-gonic/gin"
@@ -19,7 +19,7 @@ func NewApplicantHandler(service *services.ApplicantService) *ApplicantHandler {
 
 // CREATE Applicant with Household
 func (h *ApplicantHandler) CreateApplicant(c *gin.Context) {
-	var data dto.ApplicantWithHousehold
+	var data models.ApplicantWithHousehold
 
 	if err := c.ShouldBindJSON(&data); err != nil {
 		c.Error(err).SetType(gin.ErrorTypePublic).SetMeta("Failed to create applicant")
@@ -61,7 +61,7 @@ func (h *ApplicantHandler) GetAllApplicants(c *gin.Context) {
 func (h *ApplicantHandler) UpdateApplicant(c *gin.Context) {
 	id := c.Param("id")
 
-	var data dto.ApplicantWithHousehold
+	var data models.ApplicantWithHousehold
 	if err := c.ShouldBindJSON(&data); err != nil {
 		c.Error(err).SetType(gin.ErrorTypePublic).SetMeta("Invalid input format")
 		return
