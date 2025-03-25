@@ -7,4 +7,6 @@ const (
 	RELATION_MOTHER   = "mother"
 	RELATION_HUSBAND  = "husband"
 	RELATION_WIFE     = "wife"
+	RELATION_BROTHER  = "brother"
+	RELATION_SISTER   = "sister"
 )
