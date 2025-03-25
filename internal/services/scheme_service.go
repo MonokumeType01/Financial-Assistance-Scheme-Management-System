@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"log"
 	"time"
 
 	"github.com/MonokumeType01/Financial-Assistance-Scheme-Management-System/internal/data"
@@ -29,8 +30,37 @@ func isEligible(applicant models.Applicant, criteria models.Criteria) bool {
 		hasEligibleChild := false
 		for _, householdMember := range applicant.Household {
 			if householdMember.Relation == data.RELATION_SON || householdMember.Relation == data.RELATION_DAUGHTER {
-				if householdMember.SchoolLevel == criteria.HasChildren.SchoolLevel {
-					hasEligibleChild = true
+
+				childLevel := householdMember.SchoolLevel
+				schemeLevel := criteria.HasChildren.SchoolLevel
+				condition := criteria.HasChildren.SchoolLevelCondition
+
+				switch condition {
+				case data.CRITERIA_EQUAL:
+					if childLevel == schemeLevel {
+						hasEligibleChild = true
+					}
+				case data.CRITERIA_EQUAL_OR_ABOVE:
+					if childLevel >= schemeLevel {
+						hasEligibleChild = true
+					}
+				case data.CRITERIA_EQUAL_OR_BELOW:
+					if childLevel <= schemeLevel {
+						hasEligibleChild = true
+					}
+				case data.CRITERIA_ABOVE:
+					if childLevel > schemeLevel {
+						hasEligibleChild = true
+					}
+				case data.CRITERIA_BELOW:
+					if childLevel < schemeLevel {
+						hasEligibleChild = true
+					}
+				default:
+					log.Printf("[ERROR] Unknown condition: %v", condition)
+				}
+
+				if hasEligibleChild {
 					break
 				}
 			}
