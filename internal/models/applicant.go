@@ -23,3 +23,8 @@ type HouseholdMember struct {
 	ApplicantID      string `json:"-" gorm:"type:uuid;index;not null"`
 	SchoolLevel      int    `json:"school_level" gorm:"type:int"`
 }
+
+type ApplicantWithHousehold struct {
+	Applicant
+	Household []HouseholdMember `json:"household"`
+}
