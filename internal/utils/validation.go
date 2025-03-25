@@ -61,7 +61,7 @@ func ValidateApplicant(name, employmentStatus, sex, dateOfBirth string) error {
 		"ns":         true,
 	}
 	if !validEmploymentStatus[employmentStatus] {
-		return errors.New("invalid employment status, must be 'employed' or 'unemployed'")
+		return errors.New("invalid employment status, must be 'employed', 'student', 'ns' or 'unemployed'")
 	}
 
 	validSex := map[string]bool{
